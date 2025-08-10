@@ -1,69 +1,203 @@
-# React + TypeScript + Vite
+# Dynamic Form Builder
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**Dynamic Form Builder** is a modern React application that allows users to create, customize, and preview dynamic forms with drag-and-drop functionality, custom field types, validation rules, and derived field calculations.
 
-Currently, two official plugins are available:
+## 🚀 Quick Start
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+```bash
+# Install dependencies
+npm install
 
-## Expanding the ESLint configuration
+# Start development server
+npm run dev
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+# Build for production
+npm run build
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# Preview production build
+npm run preview
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## 📝 Project Description
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Dynamic Form Builder is a comprehensive React application designed to simplify the process of creating and managing dynamic forms. The application provides an intuitive drag-and-drop interface that allows users to build complex forms without any coding knowledge. Users can create various field types including text inputs, dropdowns, checkboxes, radio buttons, and more, each with customizable validation rules and properties. The real-time preview functionality ensures that form creators can see exactly how their forms will appear to end users. Advanced features include derived field calculations where field values can be automatically computed based on other field inputs, comprehensive form validation with custom rules, and persistent storage that saves forms locally in the browser. The application is built with a mobile-first responsive design approach, ensuring optimal user experience across all device types. Form management capabilities allow users to save multiple forms, edit existing ones, duplicate forms for quick iterations, and organize their form library efficiently.
 
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## 📁 Project Structure
+
 ```
+src/
+├── components/           # Reusable UI components
+│   ├── myForms/         # Form management components
+│   └── preview/         # Form rendering and display
+│       ├── formRenderer.tsx
+│       ├── appLayout.tsx
+│       ├── fieldTypeSelector.tsx
+│       └── validationRulesEditor.tsx
+├── pages/               # Main application pages
+│   ├── createPage.tsx   # Form creation interface
+│   ├── myFormsPage.tsx  # Saved forms management
+│   └── previewPage.tsx  # Form preview and testing
+├── store/               # Redux store configuration
+│   ├── slices/          # Redux slices
+│   │   ├── formBuilderSlice.ts
+│   │   ├── previewSlice.ts
+│   │   └── savedFormsSlice.ts
+│   ├── hooks.ts         # Typed Redux hooks
+│   └── index.tsx        # Store configuration
+├── types/               # TypeScript definitions
+│   ├── index.ts         # Core types
+│   └── types.ts         # Additional type definitions
+├── utils/               # Utility functions
+│   ├── constants.ts     # Application constants
+│   ├── derivedFields.ts # Field calculations
+│   ├── formStorage.ts   # Local storage operations
+│   └── validation.ts    # Validation logic
+├── App.tsx             # Root component
+├── main.tsx            # Application entry point
+└── vite-env.d.ts       # Vite type definitions
+```
+
+## 🏗️ Store Architecture
+
+Redux Toolkit implementation with modular slice architecture:
+
+```typescript
+store/
+├── slices/
+│   ├── formBuilderSlice.ts    # Active form creation/editing
+│   ├── previewSlice.ts        # Form preview state  
+│   └── savedFormsSlice.ts     # Form library management
+├── hooks.ts                   # useAppSelector & useAppDispatch
+└── index.tsx                  # Store configuration & middleware
+```
+
+### Slice Responsibilities
+- **formBuilderSlice** - Current form state, field operations, validation
+- **previewSlice** - Preview mode, form rendering, user interactions  
+- **savedFormsSlice** - CRUD operations for saved forms collection
+
+## 🔧 Code Quality
+
+The project uses:
+- **ESLint 9** - Code linting with latest rules
+- **TypeScript 5.8** - Type-safe development
+- **Strict mode** for better error catching
+- **Modern React patterns** (hooks, functional components)
+- **TypeScript ESLint** - TypeScript-specific linting
+- **React Hooks Rules** - Ensures proper hook usage
+
+## 🎨 Theming
+
+The application uses Material-UI's theming system. Customize colors, typography, and component styles:
+
+```typescript
+const theme = createTheme({
+  palette: {
+    primary: { main: '#2196f3' },
+    secondary: { main: '#ff9800' },
+    background: { default: '#f8fafc' }
+  },
+  typography: {
+    fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif'
+  }
+});
+```
+
+## ✅ Validation Configuration
+
+### Field Configuration
+```typescript
+{
+  id: string;           // Unique identifier
+  type: FieldType;      // Field type (text, number, etc.)
+  label: string;        // Display label
+  required: boolean;    // Whether field is mandatory
+  defaultValue: any;    // Default field value
+}
+```
+
+### Validation Rules
+```typescript
+{
+  type: 'notEmpty' | 'minLength' | 'maxLength' | 'email' | 'password';
+  value?: number;       // For length/value constraints
+  message: string;      // Custom error message
+}
+```
+
+### Derived Field Configuration
+```typescript
+{
+  parentFieldIds: string[];  // Fields to calculate from
+  formula: 'sum' | 'age_from_birthdate';  // Calculation type
+}
+```
+
+- **Redux Toolkit** - Modern Redux for predictable state management
+- **React Redux** - Official React bindings for Redux
+- **Slices Architecture** - Organized state logic with createSlice
+- **TypeScript Integration** - Fully typed store and actions
+- **Local Storage Persistence** - Forms automatically saved to browser storage
+
+### Store Structure
+```typescript
+store/
+├── slices/
+│   ├── formBuilderSlice.ts    # Current form editing state
+│   └── savedFormsSlice.ts     # Saved forms management
+└── hooks.ts                   # Typed useSelector/useDispatch hooks
+```
+
+## 🎨 Tech Stack
+
+### Core Framework
+- **React 19** - Latest React with modern features
+- **TypeScript 5.8** - Type-safe development
+- **Vite 7** - Lightning-fast build tool and dev server
+
+### UI & Styling
+- **Material-UI 7** - Modern React component library
+- **Emotion** - CSS-in-JS styling solution
+- **Material Icons** - Comprehensive icon library
+
+### Routing & Utilities
+- **React Router 7** - Client-side routing
+- **Nanoid** - Unique ID generation for form fields
+
+### Development Tools
+- **ESLint 9** - Code linting with latest rules
+- **TypeScript ESLint** - TypeScript-specific linting
+- **Vite React Plugin** - React integration for Vite
+
+## 🏗️ Build Process
+
+### Development Build
+```bash
+npm run dev
+```
+Starts Vite development server with hot module replacement
+
+### Production Build
+```bash
+npm run build
+```
+
+**Build Process:**
+1. **TypeScript Compilation** - `tsc -b` compiles TypeScript files
+2. **Vite Build** - Bundles and optimizes for production
+3. **Output Directory** - `./dist/` contains production-ready files
+
+### Build Output Structure
+```
+dist/
+├── assets/
+│   ├── index-[hash].js     # Main application bundle
+│   ├── index-[hash].css    # Compiled styles
+│   └── vendor-[hash].js    # Third-party dependencies
+├── index.html              # Entry point
+└── manifest.json          # App manifest
+```
+
+### Scripts
+- `npm run lint` - Run ESLint code analysis
+- `npm run preview` - Preview production build locally
