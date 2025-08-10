@@ -20,11 +20,9 @@ export const FieldOptions: React.FC<FieldOptionsProps> = React.memo(({
     const [newOption, setNewOption] = useState('');
 
     const addOption = useCallback(() => {
-        switch (!!newOption.trim()) {
-            case true:
-                onChange([...options, newOption.trim()]);
-                setNewOption('');
-                break;
+        if (newOption.trim()) {
+            onChange([...options, newOption.trim()]);
+            setNewOption('');
         }
     }, [newOption, options, onChange]);
 
@@ -35,25 +33,16 @@ export const FieldOptions: React.FC<FieldOptionsProps> = React.memo(({
         onChange(newOptions);
 
         // Update default value if it was referencing the old option
-        switch (fieldType) {
-            case 'checkbox': {
-                const currentDefaults = Array.isArray(defaultValue) ? defaultValue : [];
-                switch (currentDefaults.includes(oldValue)) {
-                    case true: {
-                        const newDefaults = currentDefaults.map(def => def === oldValue ? value : def);
-                        onDefaultValueChange?.(newDefaults);
-                        break;
-                    }
-                }
-                break;
+        if (fieldType === 'checkbox') {
+            const currentDefaults = Array.isArray(defaultValue) ? defaultValue : [];
+            if (currentDefaults.includes(oldValue)) {
+                const newDefaults = currentDefaults.map(def => def === oldValue ? value : def);
+                onDefaultValueChange?.(newDefaults);
             }
-            default:
-                switch (defaultValue === oldValue) {
-                    case true:
-                        onDefaultValueChange?.(value);
-                        break;
-                }
-                break;
+        } else {
+            if (defaultValue === oldValue) {
+                onDefaultValueChange?.(value);
+            }
         }
     }, [options, onChange, fieldType, defaultValue, onDefaultValueChange]);
 
@@ -63,20 +52,14 @@ export const FieldOptions: React.FC<FieldOptionsProps> = React.memo(({
         onChange(newOptions);
 
         // Handle default value cleanup
-        switch (fieldType) {
-            case 'checkbox': {
-                const currentDefaults = Array.isArray(defaultValue) ? defaultValue : [];
-                const newDefaults = currentDefaults.filter(val => val !== optionToDelete);
-                onDefaultValueChange?.(newDefaults);
-                break;
+        if (fieldType === 'checkbox') {
+            const currentDefaults = Array.isArray(defaultValue) ? defaultValue : [];
+            const newDefaults = currentDefaults.filter(val => val !== optionToDelete);
+            onDefaultValueChange?.(newDefaults);
+        } else {
+            if (defaultValue === optionToDelete) {
+                onDefaultValueChange?.('');
             }
-            default:
-                switch (defaultValue === optionToDelete) {
-                    case true:
-                        onDefaultValueChange?.('');
-                        break;
-                }
-                break;
         }
     }, [options, onChange, fieldType, defaultValue, onDefaultValueChange]);
 
@@ -84,24 +67,19 @@ export const FieldOptions: React.FC<FieldOptionsProps> = React.memo(({
         const currentDefaults = Array.isArray(defaultValue) ? defaultValue : [];
         let newDefaults;
 
-        switch (checked) {
-            case true:
-                newDefaults = [...currentDefaults, option];
-                break;
-            default:
-                newDefaults = currentDefaults.filter(val => val !== option);
-                break;
+        if (checked) {
+            newDefaults = [...currentDefaults, option];
+        } else {
+            newDefaults = currentDefaults.filter(val => val !== option);
         }
 
         onDefaultValueChange?.(newDefaults);
     }, [defaultValue, onDefaultValueChange]);
 
     const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-        switch (e.key) {
-            case 'Enter':
-                e.preventDefault();
-                addOption();
-                break;
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            addOption();
         }
     }, [addOption]);
 
@@ -109,10 +87,10 @@ export const FieldOptions: React.FC<FieldOptionsProps> = React.memo(({
         setNewOption(e.target.value);
     }, []);
 
-    // Update the handler to use the correct type
     const handleDefaultValueSelectChange = useCallback((e: SelectChangeEvent) => {
         onDefaultValueChange?.(e.target.value as string);
     }, [onDefaultValueChange]);
+
     // Memoized computed values
     const showDefaultSelection = useMemo(() =>
         options.length > 0 && (fieldType === 'select' || fieldType === 'radio'),
@@ -128,6 +106,9 @@ export const FieldOptions: React.FC<FieldOptionsProps> = React.memo(({
         fieldType === 'checkbox' && Array.isArray(defaultValue) && defaultValue.length > 0,
         [fieldType, defaultValue]
     );
+
+    // Fixed: Add scrollbar when many options
+    const showScrollbar = useMemo(() => options.length > 5, [options.length]);
 
     return (
         <Box>
@@ -152,45 +133,51 @@ export const FieldOptions: React.FC<FieldOptionsProps> = React.memo(({
                 </Button>
             </Box>
 
-            {/* Existing options */}
-            {options.map((option, index) => (
-                <Paper key={index} sx={{ p: 2, mb: 1, bgcolor: '#f8f9fa' }}>
-                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                        <TextField
-                            fullWidth
-                            placeholder={`Option ${index + 1}`}
-                            value={option}
-                            onChange={(e) => updateOption(index, e.target.value)}
-                            error={!option.trim()}
-                            helperText={!option.trim() ? 'Option cannot be empty' : ''}
-                            size="small"
-                        />
-
-                        {/* Checkbox for default selection (only for checkbox fields) */}
-                        {fieldType === 'checkbox' && (
-                            <FormControlLabel
-                                control={
-                                    <Checkbox
-                                        checked={checkboxDefaults.includes(option)}
-                                        onChange={(e) => handleCheckboxDefaultChange(option, e.target.checked)}
-                                        size="small"
-                                    />
-                                }
-                                label="Default"
-                                sx={{ minWidth: 'fit-content' }}
+            {/* Fixed: Existing options with scrollbar */}
+            <Box sx={{ 
+                maxHeight: fieldType === 'checkbox' ? 300 : 400, 
+                overflowY: 'auto',
+                pr: showScrollbar ? 1 : 0
+            }}>
+                {options.map((option, index) => (
+                    <Paper key={index} sx={{ p: 2, mb: 1, bgcolor: '#f8f9fa' }}>
+                        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                            <TextField
+                                fullWidth
+                                placeholder={`Option ${index + 1}`}
+                                value={option}
+                                onChange={(e) => updateOption(index, e.target.value)}
+                                error={!option.trim()}
+                                helperText={!option.trim() ? 'Option cannot be empty' : ''}
+                                size="small"
                             />
-                        )}
 
-                        <IconButton
-                            onClick={() => deleteOption(index)}
-                            color="error"
-                            size="small"
-                        >
-                            <DeleteIcon fontSize="small" />
-                        </IconButton>
-                    </Box>
-                </Paper>
-            ))}
+                            {/* Checkbox for default selection (only for checkbox fields) */}
+                            {fieldType === 'checkbox' && (
+                                <FormControlLabel
+                                    control={
+                                        <Checkbox
+                                            checked={checkboxDefaults.includes(option)}
+                                            onChange={(e) => handleCheckboxDefaultChange(option, e.target.checked)}
+                                            size="small"
+                                        />
+                                    }
+                                    label="Default"
+                                    sx={{ minWidth: 'fit-content' }}
+                                />
+                            )}
+
+                            <IconButton
+                                onClick={() => deleteOption(index)}
+                                color="error"
+                                size="small"
+                            >
+                                <DeleteIcon fontSize="small" />
+                            </IconButton>
+                        </Box>
+                    </Paper>
+                ))}
+            </Box>
 
             {/* Default value selection for select/radio fields */}
             {showDefaultSelection && (

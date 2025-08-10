@@ -22,41 +22,66 @@ npm run preview
 
 Dynamic Form Builder is a comprehensive React application designed to simplify the process of creating and managing dynamic forms. The application provides an intuitive drag-and-drop interface that allows users to build complex forms without any coding knowledge. Users can create various field types including text inputs, dropdowns, checkboxes, radio buttons, and more, each with customizable validation rules and properties. The real-time preview functionality ensures that form creators can see exactly how their forms will appear to end users. 
 
-## 📁 Project Structure
+# Project Structure
 
 ```
-src/
-├── components/           # Reusable UI components
-│   ├── myForms/         # Form management components
-│   └── preview/         # Form rendering and display
-│       ├── formRenderer.tsx
-│       ├── appLayout.tsx
-│       ├── fieldTypeSelector.tsx
-│       └── validationRulesEditor.tsx
-├── pages/               # Main application pages
-│   ├── createPage.tsx   # Form creation interface
-│   ├── myFormsPage.tsx  # Saved forms management
-│   └── previewPage.tsx  # Form preview and testing
-├── store/               # Redux store configuration
-│   ├── slices/          # Redux slices
-│   │   ├── formBuilderSlice.ts
-│   │   ├── previewSlice.ts
-│   │   └── savedFormsSlice.ts
-│   ├── hooks.ts         # Typed Redux hooks
-│   └── index.tsx        # Store configuration
-├── types/               # TypeScript definitions
-│   ├── index.ts         # Core types
-│   └── types.ts         # Additional type definitions
-├── utils/               # Utility functions
-│   ├── constants.ts     # Application constants
-│   ├── derivedFields.ts # Field calculations
-│   ├── formStorage.ts   # Local storage operations
-│   └── validation.ts    # Validation logic
-├── App.tsx             # Root component
-├── main.tsx            # Application entry point
-└── vite-env.d.ts       # Vite type definitions
+dynamic-form-builder/
+├── .gitignore
+├── eslint.config.js
+├── index.html
+├── package.json
+├── package-lock.json
+├── README.md
+├── tsconfig.app.json
+├── tsconfig.json
+├── tsconfig.node.json
+├── vite.config.ts
+├── public/
+└── src/
+    ├── App.tsx                    # Main application component
+    ├── main.tsx                   # Application entry point
+    ├── vite-env.d.ts             # Vite environment types
+    ├── assets/                    # Static assets
+    ├── components/                # Reusable components
+    │   ├── appLayout.tsx         # Main application layout
+    │   ├── fieldTypeSelector.tsx # Field type selection component
+    │   ├── validationRulesEditor.tsx # Validation rules editor
+    │   ├── common/               # Common/shared components
+    │   │   ├── modal.tsx         # Modal component
+    │   │   └── notification.tsx  # Notification component
+    │   ├── fieldConfig/          # Field configuration components
+    │   │   ├── derivedFieldConfig.tsx # Derived field configuration
+    │   │   ├── fieldConfigPanel.tsx   # Field configuration panel
+    │   │   ├── fieldList.tsx          # Field list component
+    │   │   ├── fieldOptions.tsx       # Field options component
+    │   │   ├── fieldTypeSelector.tsx  # Field type selector
+    │   │   └── validationRules.tsx    # Validation rules component
+    │   ├── formBuilder/          # Form builder components
+    │   │   └── fieldCard.tsx     # Field card component
+    │   ├── myForms/              # My forms components
+    │   │   └── formCard.tsx      # Form card component
+    │   └── preview/              # Form preview components
+    │       └── formRenderer.tsx  # Form renderer component
+    ├── pages/                    # Page components
+    │   ├── createPage.tsx        # Form creation page
+    │   ├── myFormsPage.tsx       # My forms page
+    │   └── previewPage.tsx       # Form preview page
+    ├── store/                    # Redux store configuration
+    │   ├── hooks.ts              # Redux hooks
+    │   ├── index.tsx             # Store configuration
+    │   ├── types.ts              # Store types
+    │   └── slices/               # Redux slices
+    │       ├── formBuilderSlice.ts # Form builder state
+    │       ├── previewSlice.ts     # Preview state
+    │       └── savedFormsSlice.ts  # Saved forms state
+    ├── types/                    # TypeScript type definitions
+    │   └── index.ts              # Main type definitions
+    └── utils/                    # Utility functions
+        ├── constants.ts          # Application constants
+        ├── derivedFields.ts      # Derived fields utilities
+        ├── formStorage.ts        # Form storage utilities
+        └── validation.ts         # Validation utilities
 ```
-
 ## 🏗️ Store Architecture
 
 Redux Toolkit implementation with modular slice architecture:

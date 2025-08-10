@@ -222,7 +222,7 @@ const FormsGrid = memo(({
 }) => (
   <Grid container spacing={3}>
     {forms.map((form) => (
-      <Grid size={{ xs: 12, sm: 6, lg:2.5 }} key={form.id}>
+      <Grid size={{ xs: 12, sm: 6, lg:3 }} key={form.id}>
         <FormCard
           form={form}
           onPreview={onPreview}

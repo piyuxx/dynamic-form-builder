@@ -67,13 +67,10 @@ export const FieldConfigPanel: React.FC<FieldConfigPanelProps> = memo(({
     }, [onUpdate, onCancel, onClose, originalField]);
 
     const handleClose = useCallback(() => {
-        switch (hasUnsavedChanges) {
-            case true:
-                setShowUnsavedDialog(true);
-                break;
-            default:
-                onClose();
-                break;
+        if (hasUnsavedChanges) {
+            setShowUnsavedDialog(true);
+        } else {
+            onClose();
         }
     }, [hasUnsavedChanges, onClose]);
 
@@ -90,22 +87,16 @@ export const FieldConfigPanel: React.FC<FieldConfigPanelProps> = memo(({
         const currentRules = field.validationRules || [];
         let newRules = [...currentRules];
 
-        switch (checked) {
-            case true: {
-                const hasRequiredRule = newRules.some(rule => rule.type === 'notEmpty');
-                switch (hasRequiredRule) {
-                    case false:
-                        newRules.unshift({
-                            type: 'notEmpty',
-                            message: field.type === 'checkbox' ? 'Please select at least one option' : 'This field is required'
-                        });
-                        break;
-                }
-                break;
+        if (checked) {
+            const hasRequiredRule = newRules.some(rule => rule.type === 'notEmpty');
+            if (!hasRequiredRule) {
+                newRules.unshift({
+                    type: 'notEmpty',
+                    message: field.type === 'checkbox' ? 'Please select at least one option' : 'This field is required'
+                });
             }
-            default:
-                newRules = newRules.filter(rule => rule.type !== 'notEmpty');
-                break;
+        } else {
+            newRules = newRules.filter(rule => rule.type !== 'notEmpty');
         }
 
         handleUpdate({
@@ -122,43 +113,86 @@ export const FieldConfigPanel: React.FC<FieldConfigPanelProps> = memo(({
         });
     }, [handleUpdate]);
 
+    // Fixed: Handle field type changes with proper cleanup
     const handleFieldTypeChange = useCallback((type: FieldType) => {
         const updates: Partial<FormField> = { type };
 
-        switch (true) {
-            case !['select', 'radio', 'checkbox'].includes(type):
-                updates.options = undefined;
-                break;
-            default:
-                updates.options = field.options || [];
-                break;
+        // Handle options for select/radio/checkbox fields
+        if (!['select', 'radio', 'checkbox'].includes(type)) {
+            updates.options = undefined;
+        } else {
+            updates.options = field.options || [];
         }
 
-        switch (type) {
-            case 'number':
-                break;
-            default:
-                updates.isDerived = false;
-                updates.derivedConfig = undefined;
-                break;
+        // Handle derived fields - only number fields can be derived
+        if (type !== 'number') {
+            updates.isDerived = false;
+            updates.derivedConfig = undefined;
         }
 
+        // Fixed: Handle default value changes when switching field types
         switch (true) {
-            case (field.type === 'checkbox' && type !== 'checkbox') ||
-                (field.type !== 'checkbox' && type === 'checkbox'):
+            case (field.type === 'date' && type !== 'date'):
+                // Clear date default value when switching from date to other types
                 updates.defaultValue = '';
                 break;
+            case (field.type === 'checkbox' && type !== 'checkbox'):
+                // Clear array default value when switching from checkbox
+                updates.defaultValue = '';
+                break;
+            case (field.type !== 'checkbox' && type === 'checkbox'):
+                // Set array default value when switching to checkbox
+                updates.defaultValue = [];
+                break;
+            case (type === 'number'):
+                // Convert to number if possible, otherwise clear
+                { const currentValue = field.defaultValue;
+                if (currentValue && !isNaN(Number(currentValue))) {
+                    updates.defaultValue = Number(currentValue);
+                } else {
+                    updates.defaultValue = '';
+                }
+                break; }
+        }
+
+        // Clean up validation rules that don't apply to the new field type
+        const currentRules = field.validationRules || [];
+        const cleanedRules = currentRules.filter(rule => {
+            // Email validation only for text, email, and textarea fields
+            if (rule.type === 'email' && !['text', 'email', 'textarea'].includes(type)) {
+                return false;
+            }
+            // Password validation only for text and password fields
+            if (rule.type === 'password' && !['text', 'password'].includes(type)) {
+                return false;
+            }
+            // Length validations not for checkbox/radio/select
+            if ((rule.type === 'minLength' || rule.type === 'maxLength') && 
+                ['checkbox', 'radio', 'select'].includes(type)) {
+                return false;
+            }
+            return true;
+        });
+
+        if (cleanedRules.length !== currentRules.length) {
+            updates.validationRules = cleanedRules;
+            updates.required = cleanedRules.some(rule => rule.type === 'notEmpty');
         }
 
         handleUpdate(updates);
-    }, [field.options, field.type, handleUpdate]);
+    }, [field.options, field.type, field.defaultValue, field.validationRules, handleUpdate]);
 
     const handleDefaultValueChange = useCallback((value: string) => {
         let processedValue: string | number = value;
-        switch (field.type) {
-            case 'number':
-                processedValue = value ? Number(value) : '';
-                break;
+        
+        // Fixed: Proper type conversion for number fields
+        if (field.type === 'number') {
+            if (value === '') {
+                processedValue = '';
+            } else {
+                const numValue = Number(value);
+                processedValue = isNaN(numValue) ? '' : numValue;
+            }
         }
 
         handleUpdate({ defaultValue: processedValue });
@@ -172,6 +206,7 @@ export const FieldConfigPanel: React.FC<FieldConfigPanelProps> = memo(({
     const handleDefaultValueForOptionsChange = useCallback((value: string | string[] | undefined) => {
         handleUpdate({ defaultValue: value });
     }, [handleUpdate]);
+
     const handleDerivedFieldChange = useCallback((isDerived: boolean, derivedConfig?: DerivedFieldConfig) => {
         handleUpdate({ isDerived, derivedConfig });
     }, [handleUpdate]);
@@ -183,53 +218,58 @@ export const FieldConfigPanel: React.FC<FieldConfigPanelProps> = memo(({
     );
 
     const defaultValueValidation = useMemo(() => {
-        switch (field.type) {
-            case 'number': {
-                switch (!!field.defaultValue) {
-                    case true: {
-                        const numValue = Number(field.defaultValue);
-                        const minRule = field.validationRules?.find(rule => rule.type === 'minLength');
-                        const maxRule = field.validationRules?.find(rule => rule.type === 'maxLength');
-
-                        switch (true) {
-                            case minRule && numValue < (minRule.value || 0):
-                                return {
-                                    error: true,
-                                    helperText: `Value must be at least ${minRule.value}`
-                                };
-                            case maxRule && numValue > (maxRule.value || 0):
-                                return {
-                                    error: true,
-                                    helperText: `Value must be at most ${maxRule.value}`
-                                };
-                            default:
-                                return { error: false, helperText: '' };
-                        }
-                    }
-                    default:
-                        return { error: false, helperText: '' };
-                }
+        if (field.type === 'number' && field.defaultValue !== '') {
+            const numValue = Number(field.defaultValue);
+            if (isNaN(numValue)) {
+                return {
+                    error: true,
+                    helperText: 'Invalid number format'
+                };
             }
-            default:
-                return { error: false, helperText: '' };
+            
+            const minRule = field.validationRules?.find(rule => rule.type === 'minLength');
+            const maxRule = field.validationRules?.find(rule => rule.type === 'maxLength');
+
+            if (minRule && numValue < (minRule.value || 0)) {
+                return {
+                    error: true,
+                    helperText: `Value must be at least ${minRule.value}`
+                };
+            }
+            if (maxRule && numValue > (maxRule.value || 0)) {
+                return {
+                    error: true,
+                    helperText: `Value must be at most ${maxRule.value}`
+                };
+            }
         }
+        return { error: false, helperText: '' };
     }, [field.type, field.defaultValue, field.validationRules]);
 
     const isSaveDisabled = useMemo(() => {
-        switch (true) {
-            case !field.label.trim():
-            case needsOptions && (!field.options || field.options.length === 0):
-            case defaultValueValidation.error:
-                return true;
-            default:
-                return false;
-        }
+        return !field.label.trim() || 
+               (needsOptions && (!field.options || field.options.length === 0)) ||
+               defaultValueValidation.error;
     }, [field.label, needsOptions, field.options, defaultValueValidation.error]);
 
     const filteredAvailableFields = useMemo(() =>
         availableFields.filter(f => f.id !== field.id),
         [availableFields, field.id]
     );
+
+    // Fixed: Get appropriate input type for default value field
+    const getDefaultValueInputType = useCallback(() => {
+        switch (field.type) {
+            case 'number':
+                return 'number';
+            case 'date':
+                return 'date';
+            case 'textarea':
+                return 'text';
+            default:
+                return 'text';
+        }
+    }, [field.type]);
 
     return (
         <>
@@ -305,7 +345,7 @@ export const FieldConfigPanel: React.FC<FieldConfigPanelProps> = memo(({
                                     value={field.defaultValue?.toString() || ''}
                                     onChange={(e) => handleDefaultValueChange(e.target.value)}
                                     placeholder="Enter default value (optional)"
-                                    type={field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'}
+                                    type={getDefaultValueInputType()}
                                     inputProps={field.type === 'number' ? { min: 0 } : {}}
                                     error={defaultValueValidation.error}
                                     helperText={defaultValueValidation.helperText}

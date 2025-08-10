@@ -57,15 +57,12 @@ export const ValidationRules: React.FC<ValidationRulesProps> = React.memo(({
   useEffect(() => {
     const hasRequiredRule = rules.some(rule => rule.type === 'notEmpty');
     
-    switch (isRequired && !hasRequiredRule) {
-      case true: {
-        const newRule: ValidationRule = {
-          type: 'notEmpty',
-          message: getDefaultMessage('notEmpty'),
-        };
-        onChange([...rules, newRule]);
-        break;
-      }
+    if (isRequired && !hasRequiredRule) {
+      const newRule: ValidationRule = {
+        type: 'notEmpty',
+        message: getDefaultMessage('notEmpty'),
+      };
+      onChange([...rules, newRule]);
     }
   }, [isRequired, rules, onChange, getDefaultMessage]);
 
@@ -73,16 +70,15 @@ export const ValidationRules: React.FC<ValidationRulesProps> = React.memo(({
     const usedTypes = new Set(rules.map(rule => rule.type));
     const availableTypes = availableRuleTypes.filter(type => !usedTypes.has(type));
     
-    switch (availableTypes.length > 0) {
-      case true: {
-        const ruleType = availableTypes[0];
-        const newRule: ValidationRule = {
-          type: ruleType,
-          message: getDefaultMessage(ruleType),
-        };
-        onChange([...rules, newRule]);
-        break;
-      }
+    if (availableTypes.length > 0) {
+      const ruleType = availableTypes[0];
+      const newRule: ValidationRule = {
+        type: ruleType,
+        message: getDefaultMessage(ruleType),
+        // Fixed: Set default value for min/max rules
+        ...(ruleType === 'minLength' || ruleType === 'maxLength' ? { value: 1 } : {})
+      };
+      onChange([...rules, newRule]);
     }
   }, [rules, availableRuleTypes, onChange, getDefaultMessage]);
 
@@ -96,10 +92,8 @@ export const ValidationRules: React.FC<ValidationRulesProps> = React.memo(({
     const ruleToDelete = rules[index];
     const newRules = rules.filter((_, i) => i !== index);
     
-    switch (ruleToDelete.type) {
-      case 'notEmpty':
-        onRequiredChange(false);
-        break;
+    if (ruleToDelete.type === 'notEmpty') {
+      onRequiredChange(false);
     }
     
     onChange(newRules);
@@ -107,14 +101,34 @@ export const ValidationRules: React.FC<ValidationRulesProps> = React.memo(({
 
   const handleRuleTypeChange = useCallback((index: number, e: SelectChangeEvent) => {
     const newType = e.target.value as ValidationRuleType;
-    updateRule(index, { 
+    const updatedRule: Partial<ValidationRule> = { 
       type: newType, 
       message: getDefaultMessage(newType) 
-    });
+    };
+    
+    // Fixed: Set default value for min/max rules
+    if (newType === 'minLength' || newType === 'maxLength') {
+      updatedRule.value = 1;
+    } else {
+      // Remove value for rules that don't need it
+      updatedRule.value = undefined;
+    }
+    
+    updateRule(index, updatedRule);
   }, [updateRule, getDefaultMessage]);
 
+  // Fixed: Validate value input to prevent empty values
   const handleValueChange = useCallback((index: number, value: string) => {
-    updateRule(index, { value: parseInt(value) || 0 });
+    if (value === '') {
+      // When user clears the input, set to minimum value of 1
+      updateRule(index, { value: 1 });
+    } else {
+      const numValue = parseInt(value);
+      // Don't allow invalid values, keep minimum of 1
+      if (!isNaN(numValue) && numValue >= 1) {
+        updateRule(index, { value: numValue });
+      }
+    }
   }, [updateRule]);
 
   const handleMessageChange = useCallback((index: number, message: string) => {
@@ -133,6 +147,34 @@ export const ValidationRules: React.FC<ValidationRulesProps> = React.memo(({
         return type.charAt(0).toUpperCase() + type.slice(1);
     }
   }, [fieldType]);
+
+  // Fixed: Filter out irrelevant validation rules based on field type
+  const getRelevantRules = useCallback((rules: ValidationRule[]) => {
+    return rules.filter(rule => {
+      // Email validation only for text, email, and textarea fields
+      if (rule.type === 'email' && !['text', 'email', 'textarea'].includes(fieldType)) {
+        return false;
+      }
+      // Password validation only for text and password fields
+      if (rule.type === 'password' && !['text', 'password'].includes(fieldType)) {
+        return false;
+      }
+      // Length validations not for checkbox/radio/select
+      if ((rule.type === 'minLength' || rule.type === 'maxLength') && 
+          ['checkbox', 'radio', 'select'].includes(fieldType)) {
+        return false;
+      }
+      return true;
+    });
+  }, [fieldType]);
+
+  // Clean up irrelevant rules when field type changes
+  useEffect(() => {
+    const relevantRules = getRelevantRules(rules);
+    if (relevantRules.length !== rules.length) {
+      onChange(relevantRules);
+    }
+  }, [fieldType, rules, onChange, getRelevantRules]);
 
   // Memoized computed values
   const availableForAdd = useMemo(() => {
@@ -191,10 +233,13 @@ export const ValidationRules: React.FC<ValidationRulesProps> = React.memo(({
                 <TextField
                   type="number"
                   label={fieldType === 'number' ? 'Value' : 'Length'}
-                  value={rule.value || ''}
+                  value={rule.value || 1}
                   onChange={(e) => handleValueChange(index, e.target.value)}
                   sx={{ width: 100 }}
-                  inputProps={{ min: 0 }}
+                  inputProps={{ min: 1 }}
+                  required
+                  error={!rule.value || rule.value < 1}
+                  helperText={(!rule.value || rule.value < 1) ? 'Required' : ''}
                 />
               )}
 
@@ -213,6 +258,7 @@ export const ValidationRules: React.FC<ValidationRulesProps> = React.memo(({
               label="Error Message"
               value={rule.message}
               onChange={(e) => handleMessageChange(index, e.target.value)}
+              required
             />
           </Paper>
         ))}

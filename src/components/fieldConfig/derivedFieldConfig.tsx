@@ -44,39 +44,37 @@ export const DerivedFieldConfigComponent: React.FC<DerivedFieldConfigProps> = Re
         }
     }, [availableFields]);
 
+    // Fixed: Toggle handler with proper switch logic
     const handleDerivedToggle = useCallback((checked: boolean) => {
-        switch (true) {
-            case checked && canBeDerivable: {
-                // Default to age calculation if date fields exist, otherwise sum
-                const hasDateFields = availableFields.some(f => f.type === 'date');
-                const defaultFormula = hasDateFields ? 'age_from_birthdate' : 'sum';
+        if (!canBeDerivable) return;
+        
+        if (checked) {
+            // Default to age calculation if date fields exist, otherwise sum
+            const hasDateFields = availableFields.some(f => f.type === 'date');
+            const defaultFormula = hasDateFields ? 'age_from_birthdate' : 'sum';
 
-                const defaultConfig: DerivedFieldConfig = {
-                    parentFieldIds: [],
-                    formula: defaultFormula,
-                };
-                onChange(true, defaultConfig);
-                break;
-            }
-            default:
-                onChange(false);
-                break;
+            const defaultConfig: DerivedFieldConfig = {
+                parentFieldIds: [],
+                formula: defaultFormula,
+            };
+            onChange(true, defaultConfig);
+        } else {
+            onChange(false, undefined);
         }
     }, [canBeDerivable, availableFields, onChange]);
 
+    // Fixed: Update config with proper validation
     const updateConfig = useCallback((updates: Partial<DerivedFieldConfig>) => {
-        switch (!!config) {
-            case true: {
-                const newConfig = { ...config, ...updates } as DerivedFieldConfig;
-                switch (!!updates.formula) {
-                    case true:
-                        newConfig.parentFieldIds = [];
-                        break;
-                }
-                onChange(true, newConfig);
-                break;
-            }
+        if (!config) return;
+        
+        const newConfig = { ...config, ...updates } as DerivedFieldConfig;
+        
+        // Clear parent fields when formula changes
+        if (updates.formula && updates.formula !== config.formula) {
+            newConfig.parentFieldIds = [];
         }
+        
+        onChange(true, newConfig);
     }, [config, onChange]);
 
     // Memoize expensive calculations
@@ -101,22 +99,22 @@ export const DerivedFieldConfigComponent: React.FC<DerivedFieldConfigProps> = Re
         updateConfig({ parentFieldIds: newValue });
     }, [config?.formula, updateConfig]);
 
-    switch (canBeDerivable) {
-        case false:
-            return (
-                <Alert severity="info" sx={{ mt: 2 }}>
-                    Only number fields can be derived. Derived fields calculate their value from other fields (e.g., age from birthdate, sum of amounts).
-                </Alert>
-            );
+    // Don't render if field type can't be derived
+    if (!canBeDerivable) {
+        return (
+            <Alert severity="info" sx={{ mt: 2 }}>
+                Only number fields can be derived. Derived fields calculate their value from other fields (e.g., age from birthdate, sum of amounts).
+            </Alert>
+        );
     }
 
-    switch (hasNumberFields || hasDateFields) {
-        case false:
-            return (
-                <Alert severity="warning" sx={{ mt: 2 }}>
-                    Add other fields first to enable derived field functionality. You can derive from number fields (for sum) or date fields (for age calculation).
-                </Alert>
-            );
+    // Don't render if no compatible fields available
+    if (!hasNumberFields && !hasDateFields) {
+        return (
+            <Alert severity="warning" sx={{ mt: 2 }}>
+                Add other fields first to enable derived field functionality. You can derive from number fields (for sum) or date fields (for age calculation).
+            </Alert>
+        );
     }
 
     return (
