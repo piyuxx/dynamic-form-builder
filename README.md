@@ -20,7 +20,7 @@ npm run preview
 
 ## 📝 Project Description
 
-Dynamic Form Builder is a comprehensive React application designed to simplify the process of creating and managing dynamic forms. The application provides an intuitive drag-and-drop interface that allows users to build complex forms without any coding knowledge. Users can create various field types including text inputs, dropdowns, checkboxes, radio buttons, and more, each with customizable validation rules and properties. The real-time preview functionality ensures that form creators can see exactly how their forms will appear to end users. Advanced features include derived field calculations where field values can be automatically computed based on other field inputs, comprehensive form validation with custom rules, and persistent storage that saves forms locally in the browser. The application is built with a mobile-first responsive design approach, ensuring optimal user experience across all device types. Form management capabilities allow users to save multiple forms, edit existing ones, duplicate forms for quick iterations, and organize their form library efficiently.
+Dynamic Form Builder is a comprehensive React application designed to simplify the process of creating and managing dynamic forms. The application provides an intuitive drag-and-drop interface that allows users to build complex forms without any coding knowledge. Users can create various field types including text inputs, dropdowns, checkboxes, radio buttons, and more, each with customizable validation rules and properties. The real-time preview functionality ensures that form creators can see exactly how their forms will appear to end users. 
 
 ## 📁 Project Structure
 
